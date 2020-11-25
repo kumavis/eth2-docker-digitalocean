@@ -11,7 +11,7 @@ datadir: /data
 
 ##############
 # Connectivity
-beacon-rpc-provider: prysm_beacon_slasher:4000
+beacon-rpc-provider: beacon-chain:4000
 monitoring-host: 0.0.0.0
 monitoring-port: 8680
 rpc-host: 0.0.0.0

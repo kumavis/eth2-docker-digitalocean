@@ -25,12 +25,12 @@ datasources:
   user:
   # <string> database name, if used
   database:
-  # <bool> enable/disable basic auth
-  basicAuth: true
-  # <string> basic auth username
-  basicAuthUser: admin
-  # <string> basic auth password
-  basicAuthPassword: admin
+  # # <bool> enable/disable basic auth
+  # basicAuth: true
+  # # <string> basic auth username
+  # basicAuthUser: admin
+  # # <string> basic auth password
+  # basicAuthPassword: admin
   # <bool> enable/disable with credentials headers
   withCredentials:
   # <bool> mark as default datasource. Max one per org

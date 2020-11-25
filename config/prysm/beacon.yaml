@@ -27,11 +27,9 @@ p2p-max-peers: 100
 
 ##############################
 # Connection to geth container
-http-web3provider: http://geth:8545
+http-web3provider: https://mainnet.infura.io/v3/8b72c7e5070147c9883ab6c8b8694328
 
-blst: yes
-
-pyrmont: yes
+mainnet: yes
 
 # https://github.com/attestantio/vouch/issues/6
 rpc-max-page-size: 100000

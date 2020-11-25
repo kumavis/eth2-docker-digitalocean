@@ -1,0 +1,170 @@
+version: "3.7"
+
+x-logging: &logging
+  logging:
+    driver: "json-file"
+    options:
+      max-file: "10"
+      max-size: "100m"
+
+services:
+
+  eth1:
+    image: ethereum/client-go:v1.9.24
+    restart: always
+    hostname: eth1
+    command:
+      - --http
+      - --http.addr=0.0.0.0
+      - --http.port=8545
+      - --http.vhosts=eth1
+      - --allow-insecure-unlock
+      - --rpcapi=db,eth,net,web3,personal
+      - --metrics
+      - --pprof
+      - --pprof.addr=0.0.0.0
+      # network
+      - --${ETH1_NETWORK}
+    ports:
+      # eth json rpc
+      - 8545
+      # monitoring port for prometheus
+      - 6060
+      # public p2p
+      - 30303:30303/tcp
+      - 30303:30303/udp
+    volumes:
+      - /var/data/geth:/root/.ethereum
+    <<: *logging
+
+  beacon:
+    image: gcr.io/prysmaticlabs/prysm/beacon-chain:stable
+    restart: always
+    hostname: beacon
+    depends_on:
+      - eth1
+    command:
+      - --accept-terms-of-use
+      - --datadir=/data
+      # Connectivity settings
+      - --rpc-host=0.0.0.0
+      - --monitoring-host=0.0.0.0
+      # disable scan of local network
+      - --p2p-denylist=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,100.64.0.0/10,169.254.0.0/16
+      - --p2p-tcp-port=13000
+      - --p2p-max-peers=100
+      # Connection to eth1
+      - --http-web3provider=http://eth1:8545
+      - --historical-slasher-node
+      - --block-batch-limit=512
+      # https://github.com/attestantio/vouch/issues/6
+      - --rpc-max-page-size=100000
+      - --grpc-max-msg-size=268435456
+      # network
+      - --${BEACON_NETWORK}
+    links:
+      - eth1
+    ports:
+      # json-http api
+      - 3500
+      # grpc
+      - 4000
+      # monitoring port for prometheus
+      - 8080
+      # public p2p
+      - 13000:13000/tcp
+      - 12000:12000/udp
+    volumes:
+      - /var/data/prysm/beacon-slasher:/data
+    <<: *logging
+
+  validator:
+    image: gcr.io/prysmaticlabs/prysm/validator:stable
+    restart: on-failure
+    hostname: validator
+    depends_on:
+      - beacon
+    command:
+      - --accept-terms-of-use
+      # Connectivity
+      - --beacon-rpc-provider=beacon:4000
+      - --monitoring-host=0.0.0.0
+      # Validator database, accounts & key management
+      - --datadir=/data/db
+      - --wallet-dir=/data/wallets
+      - --wallet-password-file=/data/passwords/wallet-password
+      # Fun Stuff
+      # - --graffiti=""
+      # network
+      - --${BEACON_NETWORK}
+    ports:
+      # monitoring port for prometheus 
+      - 8081
+    volumes:
+      - /var/data/prysm/validator:/data
+    <<: *logging
+
+  slasher:
+    image: gcr.io/prysmaticlabs/prysm/slasher:stable
+    restart: always
+    hostname: slasher
+    links:
+      - beacon
+    depends_on:
+      - beacon
+    command:
+      - --accept-terms-of-use
+      - --datadir=/data
+      # Connectivity
+      - --beacon-rpc-provider=beacon:4000
+      - --monitoring-host=0.0.0.0
+      - --monitoring-port=8680
+      - --rpc-host=0.0.0.0
+      # Enables historical attestation detection for the slasher
+      - --enable-historical-detection
+      # network
+      - --${BEACON_NETWORK}
+    ports:
+      # grpc
+      - 4002
+      # monitoring port for prometheus
+      - 8680
+    volumes:
+      - /var/data/prysm/slasher:/data
+    <<: *logging
+
+  prometheus:
+    image: prom/prometheus:v2.19.0
+    user: root # https://github.com/prometheus/prometheus/issues/5976
+    restart: on-failure
+    hostname: prometheus
+    command: --storage.tsdb.retention.time=31d --config.file=/etc/prometheus/prometheus.yml
+    links:
+      - eth1
+      - beacon
+      - slasher
+      - validator
+    ports:
+      # !non-authenticating! dashboard ui
+      - 9090
+    volumes:
+      - /var/config/prometheus/prometheus-p.yaml:/etc/prometheus/prometheus.yml
+      - /var/data/prometheus:/prometheus
+    <<: *logging
+
+  grafana:
+    image: grafana/grafana:7.0.3
+    user: root
+    restart: on-failure
+    hostname: grafana
+    depends_on:
+      - prometheus
+    links:
+      - prometheus
+    ports:
+      # authenticating dashboard ui
+      - 3000:3000
+    volumes:
+      - /var/config/grafana/provisioning-p:/etc/grafana/provisioning
+      - /var/data/grafana:/var/lib/grafana
+    <<: *logging

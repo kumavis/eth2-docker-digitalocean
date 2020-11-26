@@ -13,18 +13,20 @@ services:
     image: ethereum/client-go:v1.9.24
     restart: always
     hostname: eth1
+    # https://geth.ethereum.org/docs/interface/command-line-options
     command:
+      - --datadir=/data/geth
+      - --nousb
       - --http
       - --http.addr=0.0.0.0
       - --http.port=8545
       - --http.vhosts=eth1
-      - --allow-insecure-unlock
-      - --rpcapi=db,eth,net,web3,personal
+      - --rpcapi=db,eth,net,web3
       - --metrics
       - --pprof
       - --pprof.addr=0.0.0.0
       # network
-      - --${ETH1_NETWORK}
+      # - --${ETH1_NETWORK}
     ports:
       # eth json rpc
       - 8545
@@ -34,7 +36,7 @@ services:
       - 30303:30303/tcp
       - 30303:30303/udp
     volumes:
-      - /var/data/geth:/root/.ethereum
+      - /mnt/eth2_${BEACON_NETWORK}:/data
     <<: *logging
 
   beacon:
@@ -43,9 +45,10 @@ services:
     hostname: beacon
     depends_on:
       - eth1
+    # https://docs.prylabs.network/docs/prysm-usage/parameters/
     command:
       - --accept-terms-of-use
-      - --datadir=/data
+      - --datadir=/data/beacon
       # Connectivity settings
       - --rpc-host=0.0.0.0
       - --monitoring-host=0.0.0.0
@@ -75,7 +78,7 @@ services:
       - 13000:13000/tcp
       - 12000:12000/udp
     volumes:
-      - /var/data/prysm/beacon-slasher:/data
+      - /mnt/eth2_${BEACON_NETWORK}:/data
     <<: *logging
 
   validator:
@@ -84,6 +87,7 @@ services:
     hostname: validator
     depends_on:
       - beacon
+    # https://docs.prylabs.network/docs/prysm-usage/parameters/
     command:
       - --accept-terms-of-use
       # Connectivity
@@ -93,10 +97,9 @@ services:
       - --datadir=/data/db
       - --wallet-dir=/data/wallets
       - --wallet-password-file=/data/passwords/wallet-password
-      # Fun Stuff
-      # - --graffiti=""
       # network
       - --${BEACON_NETWORK}
+      # - --graffiti=""
     ports:
       # monitoring port for prometheus 
       - 8081
@@ -112,6 +115,7 @@ services:
       - beacon
     depends_on:
       - beacon
+    # https://docs.prylabs.network/docs/prysm-usage/parameters/
     command:
       - --accept-terms-of-use
       - --datadir=/data

@@ -1,0 +1,4 @@
+DO_REGION=nyc3
+DO_VOLUME_NAME=eth2-mainnet-extra-01
+
+MACHINE_NAME=eth2-mainnet-01

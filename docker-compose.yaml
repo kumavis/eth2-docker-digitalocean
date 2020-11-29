@@ -16,6 +16,7 @@ services:
     # https://geth.ethereum.org/docs/interface/command-line-options
     command:
       - --datadir=/data/geth
+      - --datadir.ancient=/extra-data/geth
       - --maxpeers=100
       - --cache=10240
       - --nousb
@@ -23,7 +24,7 @@ services:
       - --http.addr=0.0.0.0
       - --http.port=8545
       - --http.vhosts=eth1
-      - --rpcapi=db,eth,net,web3
+      - --rpcapi=eth,net,web3
       - --metrics
       - --pprof
       - --pprof.addr=0.0.0.0
@@ -32,13 +33,14 @@ services:
     ports:
       # eth json rpc
       - 8545
-      # monitoring port for prometheus
+      # metrics for prometheus
       - 6060
       # public p2p
       - 30303:30303/tcp
       - 30303:30303/udp
     volumes:
-      - /mnt/eth2_${BEACON_NETWORK}:/data
+      - eth1_data:/data
+      - /mnt/extra-data:/extra-data
     <<: *logging
 
   beacon:
@@ -50,7 +52,7 @@ services:
     # https://docs.prylabs.network/docs/prysm-usage/parameters/
     command:
       - --accept-terms-of-use
-      - --datadir=/data/beacon
+      - --datadir=/extra-data/beacon
       # Connectivity settings
       - --rpc-host=0.0.0.0
       - --monitoring-host=0.0.0.0
@@ -74,13 +76,13 @@ services:
       - 3500
       # grpc
       - 4000
-      # monitoring port for prometheus
+      # metrics for prometheus
       - 8080
       # public p2p
       - 13000:13000/tcp
       - 12000:12000/udp
     volumes:
-      - /mnt/eth2_${BEACON_NETWORK}:/data
+      - /mnt/extra-data:/extra-data
     <<: *logging
 
   validator:
@@ -103,10 +105,10 @@ services:
       - --${BEACON_NETWORK}
       # - --graffiti=""
     ports:
-      # monitoring port for prometheus 
+      # metrics for prometheus
       - 8081
     volumes:
-      - /var/data/prysm/validator:/data
+      - validator_data:/data
     <<: *logging
 
   slasher:
@@ -133,11 +135,29 @@ services:
     ports:
       # grpc
       - 4002
-      # monitoring port for prometheus
+      # metrics for prometheus
       - 8680
     volumes:
-      - /var/data/prysm/slasher:/data
+      - slasher_data:/data
     <<: *logging
+
+  node-exporter:
+    image: prom/node-exporter
+    restart: always
+    hostname: node-exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /mnt/extra-data:/mnt/extra-data:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    ports:
+      # metrics for prometheus
+      - 9100
 
   prometheus:
     image: prom/prometheus:v2.19.0
@@ -150,12 +170,13 @@ services:
       - beacon
       - slasher
       - validator
+      - node-exporter
     ports:
       # !non-authenticating! dashboard ui
       - 9090
     volumes:
       - /var/config/prometheus:/etc/prometheus
-      - /var/data/prometheus:/prometheus
+      - prometheus_data:/prometheus
     <<: *logging
 
   grafana:
@@ -172,5 +193,12 @@ services:
       - 3000:3000
     volumes:
       - /var/config/grafana:/etc/grafana/provisioning
-      - /var/data/grafana:/var/lib/grafana
+      - grafana_data:/var/lib/grafana
     <<: *logging
+
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
+  validator_data: {}
+  slasher_data: {}
+  eth1_data: {}

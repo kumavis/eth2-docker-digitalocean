@@ -9,6 +9,7 @@
 ### setup config + secrets
 
 - review `./env-config`
+- create `./env-secret` from `./env-secret.example`
 - populate `./env-secret` with `DO_TOKEN`
 
 ### create machine

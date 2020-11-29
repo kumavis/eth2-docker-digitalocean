@@ -15,12 +15,12 @@ export DO_VOLUME_NAME=eth2-$ETH2_NETWORK-extra-$VOLUME_INDEX
 if [ $ETH1_NETWORK != "mainnet" ]; then
   export ETH1_NETWORK_FLAG=--$ETH1_NETWORK
 else
-  # explicitly set empty to silence docker warnings
-  export ETH1_NETWORK_FLAG=""
+  # use valid meaningless flag to appease docker + geth
+  export ETH1_NETWORK_FLAG="--miner.extradata=ignore"
 fi
 if [ $ETH2_NETWORK != "mainnet" ]; then
   export ETH2_NETWORK_FLAG=--$ETH2_NETWORK
 else
-  # explicitly set empty to silence docker warnings
-  export ETH2_NETWORK_FLAG=""
+  # use valid meaningless flag to appease docker + geth
+  export ETH2_NETWORK_FLAG="--miner.extradata=ignore"
 fi

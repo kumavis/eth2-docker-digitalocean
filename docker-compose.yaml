@@ -29,7 +29,7 @@ services:
       - --pprof
       - --pprof.addr=0.0.0.0
       # network
-      # - --${ETH1_NETWORK}
+      - ${ETH1_NETWORK_FLAG}
     ports:
       # eth json rpc
       - 8545
@@ -68,7 +68,7 @@ services:
       - --rpc-max-page-size=100000
       - --grpc-max-msg-size=268435456
       # network
-      - --${BEACON_NETWORK}
+      - ${ETH2_NETWORK_FLAG}
     links:
       - eth1
     ports:
@@ -102,8 +102,7 @@ services:
       - --wallet-dir=/data/wallets
       - --wallet-password-file=/data/passwords/wallet-password
       # network
-      - --${BEACON_NETWORK}
-      # - --graffiti=""
+      - ${ETH2_NETWORK_FLAG}
     ports:
       # metrics for prometheus
       - 8081
@@ -131,7 +130,7 @@ services:
       # Enables historical attestation detection for the slasher
       - --enable-historical-detection
       # network
-      - --${BEACON_NETWORK}
+      - ${ETH2_NETWORK_FLAG}
     ports:
       # grpc
       - 4002

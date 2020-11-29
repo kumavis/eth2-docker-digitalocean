@@ -8,7 +8,7 @@
 
 ### setup config + secrets
 
-- review `./env-config`
+- review `./env-config`, change as desired
 - create `./env-secret` from `./env-secret.example`
 - populate `./env-secret` with `DO_TOKEN`
 
@@ -19,10 +19,10 @@ create via docker-machine
 (source ./env-secret; source ./env-config;
 docker-machine create --driver digitalocean \
   --digitalocean-access-token $DO_TOKEN \
-  --digitalocean-image "ubuntu-20-04-x64" \
+  --digitalocean-image $DO_BASE_IMAGE \
   --digitalocean-ipv6 \
   --digitalocean-monitoring \
-  --digitalocean-size "s-8vcpu-16gb" \
+  --digitalocean-size $DO_MACHINE_TYPE \
   --digitalocean-region $DO_REGION \
   $MACHINE_NAME
 )
@@ -147,17 +147,23 @@ cat ~/.docker/machine/machines/$MACHINE_NAME/config.json | jq -r .Driver.IPAddre
 
 copy keystore files into `./launchpad`, then to the remote machine
 ```
+(source ./env-config;
 docker-machine scp -d -r ./launchpad $MACHINE_NAME:/var
+)
 ```
 
 ##### import accounts
 ```
+(source ./env-config;
 docker-compose -f ./create-account.yaml run validator-import-launchpad
+)
 ```
 
 ##### list accounts
 ```
+(source ./env-config;
 docker-compose -f ./create-account.yaml run validator-list-accounts
+)
 ```
 
 ### syncing geth
@@ -166,18 +172,23 @@ syncing geth takes a long time, usually days. heres some utilities to measure it
 
 get syncing stats
 ```
+(source ./env-config;
 docker-compose exec eth1 geth attach --datadir /data/geth --exec 'eth.syncing'
+)
 ```
 
 get geth data size
 ```
+(source ./env-config;
 docker-compose exec eth1 du -sh /data/geth
+)
 ```
-
 
 ### helpful commands
 
 get ip-address on host machine of container by name
 ```
+(source ./env-config;
 docker inspect  -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker-compose ps -q node-exporter)
+)
 ```

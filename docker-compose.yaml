@@ -10,12 +10,14 @@ x-logging: &logging
 services:
 
   eth1:
-    image: ethereum/client-go:v1.9.24
+    image: ethereum/client-go:stable
     restart: always
     hostname: eth1
     # https://geth.ethereum.org/docs/interface/command-line-options
     command:
       - --datadir=/data/geth
+      - --maxpeers=100
+      - --cache=10240
       - --nousb
       - --http
       - --http.addr=0.0.0.0
@@ -57,7 +59,7 @@ services:
       - --p2p-tcp-port=13000
       - --p2p-max-peers=100
       # Connection to eth1
-      - --http-web3provider=http://eth1:8545
+      - --http-web3provider=http://geth1
       - --historical-slasher-node
       - --block-batch-limit=512
       # https://github.com/attestantio/vouch/issues/6
@@ -142,7 +144,7 @@ services:
     user: root # https://github.com/prometheus/prometheus/issues/5976
     restart: on-failure
     hostname: prometheus
-    command: --storage.tsdb.retention.time=31d --config.file=/etc/prometheus/prometheus.yml
+    command: --storage.tsdb.retention.time=31d --config.file=/etc/prometheus/prometheus.yaml
     links:
       - eth1
       - beacon
@@ -152,12 +154,12 @@ services:
       # !non-authenticating! dashboard ui
       - 9090
     volumes:
-      - /var/config/prometheus/prometheus-p.yaml:/etc/prometheus/prometheus.yml
+      - /var/config/prometheus:/etc/prometheus
       - /var/data/prometheus:/prometheus
     <<: *logging
 
   grafana:
-    image: grafana/grafana:7.0.3
+    image: grafana/grafana:7.3.4
     user: root
     restart: on-failure
     hostname: grafana
@@ -169,6 +171,6 @@ services:
       # authenticating dashboard ui
       - 3000:3000
     volumes:
-      - /var/config/grafana/provisioning-p:/etc/grafana/provisioning
+      - /var/config/grafana:/etc/grafana/provisioning
       - /var/data/grafana:/var/lib/grafana
     <<: *logging

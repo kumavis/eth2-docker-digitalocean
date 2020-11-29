@@ -33,10 +33,10 @@ tell docker to use this machine
 eval $(source ./env-config; docker-machine env $MACHINE_NAME)
 ```
 
-install updates
+install updates + restart
 ```
 (source ./env-config;
-docker-machine ssh $MACHINE_NAME 'apt update && apt upgrade -y'
+docker-machine ssh $MACHINE_NAME 'apt update && apt upgrade -y && shutdown -r'
 )
 ```
 
@@ -125,13 +125,20 @@ docker-machine scp -d -r ./config $MACHINE_NAME:/var/
 
 
 ```
-docker-compose up -d && docker-compose logs -f
+(source ./env-config;
+docker-compose up -d && docker-compose logs
+)
 ```
+
+### visit the grafana dashboard and set access password
 
 get the machine's ip address
 ```
 (source ./env-config;
-cat ~/.docker/machine/machines/$MACHINE_NAME/config.json | jq -r .Driver.IPAddress
+IP_ADDR=$(
+  cat ~/.docker/machine/machines/$MACHINE_NAME/config.json | jq -r .Driver.IPAddress
+)
+echo "http://$IP_ADDR:3000  user: admin  pass: admin"
 )
 ```
 
@@ -157,6 +164,9 @@ docker-compose -f ./create-account.yaml run validator-import-launchpad
 docker-compose -f ./create-account.yaml run validator-list-accounts
 )
 ```
+
+### helpful commands
+
 
 ### syncing geth
 

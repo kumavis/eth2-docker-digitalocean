@@ -17,14 +17,14 @@
 create via docker-machine
 ```
 (source ./env-secret; source ./env-config;
-docker-machine create --driver digitalocean \
-  --digitalocean-access-token $DO_TOKEN \
-  --digitalocean-image $DO_BASE_IMAGE \
-  --digitalocean-ipv6 \
-  --digitalocean-monitoring \
-  --digitalocean-size $DO_MACHINE_TYPE \
-  --digitalocean-region $DO_REGION \
-  $MACHINE_NAME
+  docker-machine create --driver digitalocean \
+    --digitalocean-access-token $DO_TOKEN \
+    --digitalocean-image $DO_BASE_IMAGE \
+    --digitalocean-ipv6 \
+    --digitalocean-monitoring \
+    --digitalocean-size $DO_MACHINE_TYPE \
+    --digitalocean-region $DO_REGION \
+    $MACHINE_NAME
 )
 ```
 
@@ -36,7 +36,7 @@ eval $(source ./env-config; docker-machine env $MACHINE_NAME)
 install updates + restart
 ```
 (source ./env-config;
-docker-machine ssh $MACHINE_NAME 'apt update && apt upgrade -y && shutdown -r'
+  docker-machine ssh $MACHINE_NAME 'apt update && apt upgrade -y && shutdown -r'
 )
 ```
 
@@ -45,7 +45,7 @@ docker-machine ssh $MACHINE_NAME 'apt update && apt upgrade -y && shutdown -r'
 verify ssh authentication rules
 ```
 (source ./env-config;
-docker-machine ssh $MACHINE_NAME "sshd -T | grep authentication"
+  docker-machine ssh $MACHINE_NAME "sshd -T | grep authentication"
 )
 ```
 
@@ -73,41 +73,41 @@ and set it to attach to your machine and automatically format and mount
 create volume
 ```
 (source ./env-secret; source ./env-config;
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
-  -d "{\"size_gigabytes\":250, \"name\": \"$DO_VOLUME_NAME\", \"region\": \"$DO_REGION\", \"filesystem_type\": \"ext4\"}" \
-  "https://api.digitalocean.com/v2/volumes"
+  curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
+    -d "{\"size_gigabytes\":250, \"name\": \"$DO_VOLUME_NAME\", \"region\": \"$DO_REGION\", \"filesystem_type\": \"ext4\"}" \
+    "https://api.digitalocean.com/v2/volumes"
 )
 ```
 
 attach volume
 ```
 (source ./env-secret; source ./env-config;
-DROPLETS_INFO=$(
-  curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
-  "https://api.digitalocean.com/v2/droplets"
-)
-DROPLET_ID=$(
-  echo $DROPLETS_INFO | jq ".droplets[] | select(.name == \"$MACHINE_NAME\") | .id"
-)
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
-  -d "{\"type\":\"attach\", \"volume_name\": \"$DO_VOLUME_NAME\", \"region\": \"$DO_REGION\", \"droplet_id\": \"$DROPLET_ID\"}" \
-  "https://api.digitalocean.com/v2/volumes/actions"
+  DROPLETS_INFO=$(
+    curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
+    "https://api.digitalocean.com/v2/droplets"
+  )
+  DROPLET_ID=$(
+    echo $DROPLETS_INFO | jq ".droplets[] | select(.name == \"$MACHINE_NAME\") | .id"
+  )
+  curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
+    -d "{\"type\":\"attach\", \"volume_name\": \"$DO_VOLUME_NAME\", \"region\": \"$DO_REGION\", \"droplet_id\": \"$DROPLET_ID\"}" \
+    "https://api.digitalocean.com/v2/volumes/actions"
 )
 ```
 
 verify: list volumes
 ```
 (source ./env-secret; source ./env-config;
-curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
-  "https://api.digitalocean.com/v2/volumes?region=$DO_REGION" \
-  | jq
+  curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
+    "https://api.digitalocean.com/v2/volumes?region=$DO_REGION" \
+    | jq
 )
 ```
 
 remount volume to deterministic path
 ```
 (source ./env-config;
-docker-machine ssh $MACHINE_NAME "umount /dev/sda && mkdir /mnt/extra-data && mount -t ext4 /dev/sda /mnt/extra-data"
+  docker-machine ssh $MACHINE_NAME "umount /dev/sda && mkdir /mnt/extra-data && mount -t ext4 /dev/sda /mnt/extra-data"
 )
 ```
 
@@ -117,7 +117,7 @@ this will copy files from your local machine to the remote machine
 
 ```
 (source ./env-config;
-docker-machine scp -d -r ./config $MACHINE_NAME:/var/
+  docker-machine scp -d -r ./config $MACHINE_NAME:/var/
 )
 ```
 
@@ -126,7 +126,7 @@ docker-machine scp -d -r ./config $MACHINE_NAME:/var/
 
 ```
 (source ./env-config;
-docker-compose up -d && docker-compose logs
+  docker-compose up -d && docker-compose logs
 )
 ```
 
@@ -135,10 +135,10 @@ docker-compose up -d && docker-compose logs
 get the machine's ip address
 ```
 (source ./env-config;
-IP_ADDR=$(
-  cat ~/.docker/machine/machines/$MACHINE_NAME/config.json | jq -r .Driver.IPAddress
-)
-echo "http://$IP_ADDR:3000  user: admin  pass: admin"
+  IP_ADDR=$(
+    cat ~/.docker/machine/machines/$MACHINE_NAME/config.json | jq -r .Driver.IPAddress
+  )
+  echo "http://$IP_ADDR:3000  user: admin  pass: admin"
 )
 ```
 
@@ -147,21 +147,21 @@ echo "http://$IP_ADDR:3000  user: admin  pass: admin"
 copy keystore files into `./launchpad`, then to the remote machine
 ```
 (source ./env-config;
-docker-machine scp -d -r ./launchpad $MACHINE_NAME:/var
+  docker-machine scp -d -r ./launchpad $MACHINE_NAME:/var
 )
 ```
 
 ##### import accounts
 ```
 (source ./env-config;
-docker-compose -f ./create-account.yaml run validator-import-launchpad
+  docker-compose -f ./create-account.yaml run validator-import-launchpad
 )
 ```
 
 ##### list accounts
 ```
 (source ./env-config;
-docker-compose -f ./create-account.yaml run validator-list-accounts
+  docker-compose -f ./create-account.yaml run validator-list-accounts
 )
 ```
 
@@ -175,14 +175,14 @@ syncing geth takes a long time, usually days. heres some utilities to measure it
 get syncing stats
 ```
 (source ./env-config;
-docker-compose exec eth1 geth attach --datadir /data/geth --exec 'eth.syncing'
+  docker-compose exec eth1 geth attach --datadir /data/geth --exec 'eth.syncing'
 )
 ```
 
 get geth data size
 ```
 (source ./env-config;
-docker-compose exec eth1 du -sh /data/geth
+  docker-compose exec eth1 du -sh /data/geth
 )
 ```
 
@@ -191,6 +191,6 @@ docker-compose exec eth1 du -sh /data/geth
 get ip-address on host machine of container by name
 ```
 (source ./env-config;
-docker inspect  -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker-compose ps -q node-exporter)
+  docker inspect  -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker-compose ps -q node-exporter)
 )
 ```

@@ -33,21 +33,6 @@ tell docker to use this machine
 eval $(source ./env-config; docker-machine env $MACHINE_NAME)
 ```
 
-**add DROPLET_ID to secrets**
-
-```
-(source ./env-secret; source ./env-config;
-DROPLETS_INFO=$(
-  curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
-  "https://api.digitalocean.com/v2/droplets"
-)
-DROPLET_ID=$(
-  echo $DROPLETS_INFO | jq ".droplets[] | select(.name == \"$MACHINE_NAME\") | .id"
-)
-echo "DO_DROPLET_ID=$DROPLET_ID" >> ./env-secret
-)
-```
-
 install updates
 ```
 (source ./env-config;
@@ -97,8 +82,15 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $DO_T
 attach volume
 ```
 (source ./env-secret; source ./env-config;
+DROPLETS_INFO=$(
+  curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
+  "https://api.digitalocean.com/v2/droplets"
+)
+DROPLET_ID=$(
+  echo $DROPLETS_INFO | jq ".droplets[] | select(.name == \"$MACHINE_NAME\") | .id"
+)
 curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
-  -d "{\"type\":\"attach\", \"volume_name\": \"$DO_VOLUME_NAME\", \"region\": \"$DO_REGION\", \"droplet_id\": \"$DO_DROPLET_ID\"}" \
+  -d "{\"type\":\"attach\", \"volume_name\": \"$DO_VOLUME_NAME\", \"region\": \"$DO_REGION\", \"droplet_id\": \"$DROPLET_ID\"}" \
   "https://api.digitalocean.com/v2/volumes/actions"
 )
 ```

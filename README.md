@@ -8,52 +8,69 @@ it is:
 
 have fun
 
-### software dependencies for your local machine
+### what you need
+
+##### software dependencies for your local machine
 
 - linux
 - docker
 - docker-machine
 - jq
 
-### setup config + secrets
+##### dns name for your dashboard
 
-- review `./env-config`, change as desired
-- create `./env-secret` from `./env-secret.example`
-- populate `./env-secret` with `DO_TOKEN`
+for https. subdomains are fine. ssl certs are automated.
 
-### create machine
+##### digital ocean account
+
+and an api key
+
+##### setup config + secrets
+
+- copy `.env.example` to `.env`
+- review configuration in `.env`, change as desired
+- populate `.env` with:
+  - `DO_TOKEN` (digital ocean api key)
+  - `WEB_ADMIN_EMAIL` (your email)
+  - `WEB_DASHBOARD_DOMAIN` (the domain for your monitoring dashboard)
+
+### setting up the machine
+
+##### create machine
 
 create via docker-machine
 ```
-(source ./env-secret; source ./env-config;
+(source .env;
   docker-machine create --driver digitalocean \
-    --digitalocean-access-token $DO_TOKEN \
-    --digitalocean-image $DO_BASE_IMAGE \
-    --digitalocean-ipv6 \
-    --digitalocean-monitoring \
-    --digitalocean-size $DO_MACHINE_TYPE \
-    --digitalocean-region $DO_REGION \
-    $MACHINE_NAME
+      --digitalocean-access-token $DO_TOKEN \
+      --digitalocean-image $DO_BASE_IMAGE \
+      --digitalocean-ipv6 \
+      --digitalocean-monitoring \
+      --digitalocean-size $DO_MACHINE_TYPE \
+      --digitalocean-region $DO_REGION \
+      $MACHINE_NAME
 )
 ```
 
 tell docker to use this machine
 ```
-eval $(source ./env-config; docker-machine env $MACHINE_NAME)
+(source .env;
+  eval $(docker-machine env $MACHINE_NAME)
+)
 ```
 
 install updates + restart
 ```
-(source ./env-config;
+(source .env;
   docker-machine ssh $MACHINE_NAME 'apt update && apt upgrade -y && shutdown -r'
 )
 ```
 
-### check machine security
+##### check machine security
 
 verify ssh authentication rules
 ```
-(source ./env-config;
+(source .env;
   docker-machine ssh $MACHINE_NAME "sshd -T | grep authentication"
 )
 ```
@@ -72,7 +89,7 @@ authenticationmethods any
 ```
 
 
-### setup block storage
+##### setup block storage
 
 your nodes will need some extra space
 
@@ -81,7 +98,7 @@ and set it to attach to your machine and automatically format and mount
 
 create volume
 ```
-(source ./env-secret; source ./env-config;
+(source .env;
   curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
     -d "{\"size_gigabytes\":250, \"name\": \"$DO_VOLUME_NAME\", \"region\": \"$DO_REGION\", \"filesystem_type\": \"ext4\"}" \
     "https://api.digitalocean.com/v2/volumes"
@@ -90,7 +107,7 @@ create volume
 
 attach volume
 ```
-(source ./env-secret; source ./env-config;
+(source .env;
   DROPLETS_INFO=$(
     curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
     "https://api.digitalocean.com/v2/droplets"
@@ -106,7 +123,7 @@ attach volume
 
 verify: list volumes
 ```
-(source ./env-secret; source ./env-config;
+(source .env;
   curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $DO_TOKEN" \
     "https://api.digitalocean.com/v2/volumes?region=$DO_REGION" \
     | jq
@@ -115,91 +132,88 @@ verify: list volumes
 
 remount volume to deterministic path
 ```
-(source ./env-config;
+(source .env;
   docker-machine ssh $MACHINE_NAME "umount /dev/sda && mkdir /mnt/extra-data && mount -t ext4 /dev/sda /mnt/extra-data"
 )
 ```
 
-### copy system config
+##### copy system config
 
 this will copy files from your local machine to the remote machine
 
 ```
-(source ./env-config;
+(source .env;
   docker-machine scp -d -r ./config $MACHINE_NAME:/var/
 )
 ```
 
-### boot system
+##### setup dns
 
-
-```
-(source ./env-config;
-  docker-compose up -d && docker-compose logs
-)
-```
-
-### visit the grafana dashboard and set access password
+set dns to point at your droplet.
+you may alternatively setup a floating ip.
 
 get the machine's ip address
 ```
-(source ./env-config;
-  IP_ADDR=$(
-    cat ~/.docker/machine/machines/$MACHINE_NAME/config.json | jq -r .Driver.IPAddress
-  )
-  echo "http://$IP_ADDR:3000  user: admin  pass: admin"
+(source .env;
+  cat ~/.docker/machine/machines/$MACHINE_NAME/config.json | jq -r .Driver.IPAddress
 )
 ```
 
-### import keys
+### running it
+
+##### boot system
+
+start the system and show logs. close logs at any time.
+```
+docker-compose up -d && docker-compose logs
+```
+
+visit your url and set the grafana password (default: admin admin)
+
+
+### validating
+
+once geth is ready, you can start validating
+
+##### import keys
 
 copy keystore files into `./launchpad`, then to the remote machine
 ```
-(source ./env-config;
+(source .env;
   docker-machine scp -d -r ./launchpad $MACHINE_NAME:/var
 )
 ```
 
-##### import accounts
+####### import accounts
 ```
-(source ./env-config;
-  docker-compose -f ./create-account.yaml run validator-import-launchpad
-)
+docker-compose -f ./create-account.yaml run validator-import-launchpad
 ```
 
-##### list accounts
+####### list accounts
 ```
-(source ./env-config;
-  docker-compose -f ./create-account.yaml run validator-list-accounts
-)
+docker-compose -f ./create-account.yaml run validator-list-accounts
 ```
 
-### helpful commands
+##### helpful commands
 
 
-### syncing geth
+##### syncing geth
 
 syncing geth takes a long time, usually days. heres some utilities to measure it:
 
 get syncing stats
 ```
-(source ./env-config;
-  docker-compose exec eth1 geth attach --datadir /data/geth --exec 'eth.syncing'
-)
+docker-compose exec eth1 geth attach --datadir /data/geth --exec 'eth.syncing'
 ```
 
 get geth data size
 ```
-(source ./env-config;
-  docker-compose exec eth1 du -sh /data/geth
-)
+docker-compose exec eth1 du -sh /data/geth
 ```
 
-### helpful commands
+##### helpful commands
 
 get ip-address on host machine of container by name
 ```
-(source ./env-config;
-  docker inspect  -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker-compose ps -q node-exporter)
-)
+docker inspect  -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker-compose ps -q node-exporter)
 ```

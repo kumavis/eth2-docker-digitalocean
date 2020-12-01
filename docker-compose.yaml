@@ -160,14 +160,16 @@ services:
       # Validator database, accounts & key management
       - --datadir=/data/db
       - --wallet-dir=/data/wallets
-      - --wallet-password-file=/data/passwords/wallet-password
+      - --wallet-password-file=/config/wallet-password
+      - --graffiti=${VALIDATOR_GRAFFITI}
       # network
       - ${ETH2_NETWORK_FLAG}
     ports:
       # metrics for prometheus
       - 8081
     volumes:
-      - validator_data:/data
+      - /var/data/validator:/data
+      - /var/config/validator:/config
     <<: *logging
 
   slasher:
@@ -248,7 +250,6 @@ services:
 volumes:
   prometheus_data: {}
   grafana_data: {}
-  validator_data: {}
   slasher_data: {}
   eth1_data: {}
 

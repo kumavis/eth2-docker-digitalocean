@@ -1,0 +1,30 @@
+version: "3.7"
+services:
+  import-keys:
+    image: gcr.io/prysmaticlabs/prysm/validator:stable
+    command:
+      - accounts
+      - import
+      - --accept-terms-of-use
+      - --keys-dir=/validator_keys/
+      - --wallet-dir=/data/wallets
+      - --wallet-password-file=/config/wallet-password
+      - ${ETH2_NETWORK_FLAG}
+    volumes:
+      - /var/data/validator:/data
+      - /var/config/validator:/config
+      - /var/validator_keys:/validator_keys
+
+  list-accounts:
+    image: gcr.io/prysmaticlabs/prysm/validator:stable
+    command:
+      - accounts
+      - list
+      - --accept-terms-of-use
+      - --wallet-dir=/data/wallets
+      - --wallet-password-file=/config/wallet-password
+      - --show-deposit-data
+      - ${ETH2_NETWORK_FLAG}
+    volumes:
+      - /var/data/validator:/data
+      - /var/config/validator:/config

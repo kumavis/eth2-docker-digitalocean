@@ -177,24 +177,24 @@ once geth is ready, you can start validating
 
 ##### import keys
 
-copy keystore files into `./launchpad`, then to the remote machine
+copy keystore files into `./validator_keys`, then to the remote machine
 ```
 (source .env;
-  docker-machine scp -d -r ./launchpad $MACHINE_NAME:/var
+  docker-machine scp -d -r ./validator_keys $MACHINE_NAME:/var
 )
 ```
 
-####### import accounts
+##### import accounts
 ```
-docker-compose -f ./create-account.yaml run validator-import-launchpad
-```
-
-####### list accounts
-```
-docker-compose -f ./create-account.yaml run validator-list-accounts
+docker-compose -f ./validator-mgmt.yaml run import-keys
 ```
 
-##### helpful commands
+##### list accounts
+```
+docker-compose -f ./validator-mgmt.yaml run list-accounts
+```
+
+### helpful commands
 
 
 ##### syncing geth

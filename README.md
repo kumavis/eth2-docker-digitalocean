@@ -1,4 +1,13 @@
 
+this is a configuration and instructions for setting up an eth2 validator on digital ocean
+
+it is:
+- incomplete
+- insecure
+- and provided without warranty or support
+
+have fun
+
 ### software dependencies for your local machine
 
 - linux

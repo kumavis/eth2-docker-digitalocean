@@ -21,6 +21,6 @@ fi
 if [ $ETH2_NETWORK != "mainnet" ]; then
   export ETH2_NETWORK_FLAG=--$ETH2_NETWORK
 else
-  # use valid meaningless flag to appease docker + geth
-  export ETH2_NETWORK_FLAG="--miner.extradata=ignore"
+  # use empty flag to appease docker
+  export ETH2_NETWORK_FLAG=""
 fi

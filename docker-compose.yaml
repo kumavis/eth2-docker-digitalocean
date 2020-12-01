@@ -122,7 +122,7 @@ services:
       - --p2p-tcp-port=13000
       - --p2p-max-peers=100
       # Connection to eth1
-      - --http-web3provider=eth1:8545
+      - --http-web3provider=http://eth1:8545
       - --historical-slasher-node
       - --block-batch-limit=512
       # https://github.com/attestantio/vouch/issues/6
